@@ -1,6 +1,6 @@
 // Pseduo-chess egnine
 
-// Prgrammer: Rajendra Adhikari
+// Prgrammer: Rajendra Adhikari, Quan Pham
 
 // email: therajendraadhikari@gmail.com
 
@@ -16,9 +16,18 @@
 
 #include <istream>
 
+#include <ctype.h>
+
 using namespace std;
 
- 
+ int checkFormat(string check)
+{
+    if (check.length() < 4) return 0;
+    string check1 = check.substr(check.length()-4,check.length());
+
+    if (isalpha(check1[0]) && isalpha(check1[2]) && isdigit(check1[1]) && isdigit(check1[3])) return 1;
+    return 0;
+}
 
 int main()
 
@@ -142,21 +151,23 @@ int main()
 
  
 
-        loc = xtoe.find( "usermove", 0 );
+        //loc = xtoe.find( "usermove", 0 );
 
-        loc2 = xtoe.find("accepted", 0);
+        //loc2 = xtoe.find("accepted", 0);
 
-        loc3 = xtoe.find("rejected", 0);
+        //loc3 = xtoe.find("rejected", 0);
 
  
 
-        if (loc != string::npos && loc2 == string::npos && loc3 == string::npos)
+        if (checkFormat(xtoe))
 
         {
 
             //so a valid move is sent.
 
-            outfile << xtoe.data() << endl << flush; //save this message into outfile
+            //outfile << xtoe.data() << endl << flush; //save this message into outfile
+            int xtoeLength = xtoe.length();
+            outfile << xtoe.substr(xtoeLength-4,xtoeLength) << endl << flush;
 
  
 

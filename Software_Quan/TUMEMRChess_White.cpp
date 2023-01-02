@@ -1,6 +1,6 @@
 // Pseduo-chess egnine
 
-// Prgrammer: Rajendra Adhikari
+// Prgrammer: Rajendra Adhikari, Quan Pham
 
 // email: therajendraadhikari@gmail.com
 
@@ -16,9 +16,20 @@
 
 #include <istream>
 
+#include <ctype.h>
+
 using namespace std;
 
  
+int checkFormat(string check)
+{
+    if (check.length() < 4) return 0;
+    string check1 = check.substr(check.length()-4,check.length());
+
+    if (isalpha(check1[0]) && isalpha(check1[2]) && isdigit(check1[1]) && isdigit(check1[3])) return 1;
+    return 0;
+}
+
 
 int main()
 
@@ -48,11 +59,51 @@ int main()
 
 //outfile and dumpfile are almost similar, only, outfile is a filtered form of dumpfile
 
- 
+    int firstTime = 1;
 
     while (run) // the (almost) infinite program loop
 
     {
+
+         if (firstTime || checkFormat(xtoe))
+
+        {         
+            
+
+            if (!firstTime)
+            { 
+            //so a valid move is sent.
+            int xtoeLength = xtoe.length();
+            outfile << xtoe.substr(xtoeLength-4,xtoeLength) << endl << flush; //save this message into outfile
+            }
+            
+ 
+
+            //now we need to send back our move back to winboard, in the form like "move g7g5". Since we aren't a genuine engine, we will just wait for some external medium (like matlab, or human) to provide us the move, we will poll the infile for new moves
+
+            int endfile = 1; // a flag to indicate when to stop polling for our reply move
+
+            while (endfile) // repeat till we get the move
+
+            {
+
+                Sleep(10); //make the polling less intensive to the cpu by including sleep
+
+                infile.clear(); // see the comment on the line just below this
+
+                getline(infile,mtoe); //if the infile don't contains any new line (which occurs everytime our engine runs out of new moves),then the infile's some error flag bits will be set, and it will prevent reading anymore lines, so we need to clear these flags repetedly. Hence the line above.
+
+                if (strcmp(mtoe.data(),"")!=0) endfile=0; //if we got any new data, just end the poll. (we should get data like "g7g5")
+
+            }
+
+            cout << "move "<< mtoe.data() << endl; // send the move to the winboard by preceding with "move".
+            firstTime = 0;
+        }
+
+ 
+
+        mtoe = "";
 
  
 
@@ -142,46 +193,11 @@ int main()
 
  
 
-        loc = xtoe.find( "usermove", 0 );
-
-        loc2 = xtoe.find("accepted", 0);
-
-        loc3 = xtoe.find("rejected", 0);
-
-        //now we need to send back our move back to winboard, in the form like "move g7g5". Since we aren't a genuine engine, we will just wait for some external medium (like matlab, or human) to provide us the move, we will poll the infile for new moves
-
-            int endfile = 1; // a flag to indicate when to stop polling for our reply move
-
-            while (endfile) // repeat till we get the move
-
-            {
-
-                Sleep(10); //make the polling less intensive to the cpu by including sleep
-
-                infile.clear(); // see the comment on the line just below this
-
-                getline(infile,mtoe); //if the infile don't contains any new line (which occurs everytime our engine runs out of new moves),then the infile's some error flag bits will be set, and it will prevent reading anymore lines, so we need to clear these flags repetedly. Hence the line above.
-
-                if (strcmp(mtoe.data(),"")!=0) endfile=0; //if we got any new data, just end the poll. (we should get data like "g7g5")
-
-            }
-
-            cout << "move "<< mtoe.data() << endl; // send the move to the winboard by preceding with "move". 
-
-
-        if (loc != string::npos && loc2 == string::npos && loc3 == string::npos)
-
-        {
-
-            //so a valid move is sent.
-
-            outfile << xtoe.data() << endl << flush; //save this message into outfile
-
-        }
+        
 
  
 
-        mtoe = "";
+       
 
  
 
