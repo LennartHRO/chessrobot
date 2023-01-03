@@ -20,7 +20,9 @@
 
 using namespace std;
 
- int checkFormat(string check)
+
+//check if string has 4 characters/digits or more and if string has the format "letter-digit-letter-digit", e.g. "e2e4"
+int checkFormat(string check)
 {
     if (check.length() < 4) return 0;
     string check1 = check.substr(check.length()-4,check.length());
@@ -34,10 +36,6 @@ int main()
 {
 
     string::size_type loc; // variables sort of int, but those that are used to hold location in string
-
-    string::size_type loc2; // find function returns value of type size_type, so we need appropriate type
-
-    string::size_type loc3; // of variable
 
     string xtoe; // Used to store messages from winboard to engine(me)
 
@@ -57,6 +55,9 @@ int main()
 
 //outfile and dumpfile are almost similar, only, outfile is a filtered form of dumpfile
 
+//sent "black" to in.txt
+
+outfile << "black" << endl;
  
 
     while (run) // the (almost) infinite program loop
@@ -140,23 +141,6 @@ int main()
  
 
         }
-
- 
-
- 
-
-        //now we detect if a move(by the other genuine engine) is sent to us. It will contain message sort of "usermove g2g4".
-
-        // so we look for usermove command. But winboard can also send "usermove accepted" or "usermove rejected" command, (in reply to feature request) so we need to make sure, the message don't contains any "accepted" or "rejected" keywords.
-
- 
-
-        //loc = xtoe.find( "usermove", 0 );
-
-        //loc2 = xtoe.find("accepted", 0);
-
-        //loc3 = xtoe.find("rejected", 0);
-
  
 
         if (checkFormat(xtoe))

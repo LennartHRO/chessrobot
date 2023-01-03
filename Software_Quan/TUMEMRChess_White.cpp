@@ -1,6 +1,6 @@
 // Pseduo-chess egnine
 
-// Prgrammer: Rajendra Adhikari, Quan Pham
+// Prgrammer: Rajendra Adhikari
 
 // email: therajendraadhikari@gmail.com
 
