@@ -59,6 +59,10 @@ int main()
 
 //outfile and dumpfile are almost similar, only, outfile is a filtered form of dumpfile
 
+//sent "white" to in.txt
+
+outfile << "white" << endl;
+
     int firstTime = 1;
 
     while (run) // the (almost) infinite program loop
