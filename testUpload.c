@@ -1,1 +1,1 @@
-just a stupip test c file
+just a stupid test c file
