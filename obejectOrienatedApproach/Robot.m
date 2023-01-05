@@ -7,10 +7,10 @@ classdef Robot
         group
     end
 
-    methods
+    methods (Access = public)
         function obj = Robot()
-            %Construct an instance of this class   
-            
+            %Construct an instance of this class
+
         end
 
         function success = makeMove(startPos, endPos)
@@ -18,4 +18,6 @@ classdef Robot
             success = 1;
         end
     end
+
+    
 end
