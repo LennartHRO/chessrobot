@@ -49,7 +49,7 @@ int main()
 
  
 
-    ofstream outfile("C:\\Users\\paqua\\Desktop\\Chess\\03_IO\\in.txt",ios::app);    //The file where we write (selected) messages sent to us my winboard. (to be read by matlab). Since we can't directly send message to matlab, this file is used as medium.
+    ofstream outfile("C:\\Users\\paqua\\Desktop\\Chess\\03_IO\\in.txt",ios::out);    //The file where we write (selected) messages sent to us my winboard. (to be read by matlab). Since we can't directly send message to matlab, this file is used as medium.
 
     ofstream dumpfile("C:\\Users\\paqua\\Desktop\\Chess\\03_IO\\dump.txt",ios::app); // We will dump everything we have been sent by winboard to this file. will be usefull for debugging purpose, and just for knowledge of what is being sent to us
 
