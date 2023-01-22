@@ -45,11 +45,11 @@ int main()
 
  
 
-    ofstream outfile("C:\\Users\\paqua\\Desktop\\Chess\\03_IO\\in.txt",ios::out);    //The file where we write (selected) messages sent to us my winboard. (to be read by matlab). Since we can't directly send message to matlab, this file is used as medium.
+    ofstream outfile("C:\\Users\\lenna\\OneDrive - TUM\\Uni\\Entickelung modularer Roboter\\Schachroboter\\IO\\in.txt",ios::out);    //The file where we write (selected) messages sent to us my winboard. (to be read by matlab). Since we can't directly send message to matlab, this file is used as medium.
 
-    ofstream dumpfile("C:\\Users\\paqua\\Desktop\\Chess\\03_IO\\dump.txt",ios::app); // We will dump everything we have been sent by winboard to this file. will be usefull for debugging purpose, and just for knowledge of what is being sent to us
+    ofstream dumpfile("C:\\Users\\lenna\\OneDrive - TUM\\Uni\\Entickelung modularer Roboter\\Schachroboter\\IO\\dump.txt",ios::app); // We will dump everything we have been sent by winboard to this file. will be usefull for debugging purpose, and just for knowledge of what is being sent to us
 
-    ifstream infile("C:\\Users\\paqua\\Desktop\\Chess\\03_IO\\out.txt",ios::in);     //We will read what is being sent to us by matlab through this file. since we don't directly know how to send datas from matlab to winboard, we will use this as medium
+    ifstream infile("C:\\Users\\lenna\\OneDrive - TUM\\Uni\\Entickelung modularer Roboter\\Schachroboter\\IO\\out.txt",ios::in);     //We will read what is being sent to us by matlab through this file. since we don't directly know how to send datas from matlab to winboard, we will use this as medium
 
  
 
