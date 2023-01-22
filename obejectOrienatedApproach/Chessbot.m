@@ -1,7 +1,5 @@
 classdef Chessbot
-    %Chessbot Summary of this class goes here
-
-
+    
     properties
 
     end
@@ -10,7 +8,6 @@ classdef Chessbot
         function obj = Chessbot()
 
         end
-
 
         function [robot_move, beat] = calculateMove(obj, player_move)
             % ..
