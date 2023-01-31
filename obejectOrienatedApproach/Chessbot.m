@@ -16,6 +16,10 @@ classdef Chessbot
             clearfile = fopen('C:\Users\lenna\OneDrive - TUM\Uni\Entickelung modularer Roboter\Schachroboter\IO\in.txt','w'); 
             fclose(clearfile);
 
+            %Open out.txt to write and close again (to delete any old data).
+            clearfile = fopen('C:\Users\lenna\OneDrive - TUM\Uni\Entickelung modularer Roboter\Schachroboter\IO\out.txt','w'); 
+            fclose(clearfile);
+
             %Open in.txt again to read
             Input = fopen('C:\Users\lenna\OneDrive - TUM\Uni\Entickelung modularer Roboter\Schachroboter\IO\in.txt','r'); 
                     
