@@ -8,11 +8,15 @@ classdef Robot
         % Hebi-spezifisch:
         group % Hebi-Group
         kin % Hebi Kinematics
+        cmd
         % Konstanten:
         board_offset % 2x1 vector in the cartesian arm system from the origin to the lower left corner of the grid (base of the board system)
         fig_gripped_min_torque 
         gripper_open_angle
         gripper_closed_angle
+        % Variablen des Greifers
+        gripper_opened
+        figure_gripped
         % Variablen des Arms:
         hinge_target % Scalar that is the target angle (radians) of the hinge (= first joint)
         xy_target % 2x1 vector of the desired arm position in the cartesian system
@@ -26,13 +30,17 @@ classdef Robot
             % hier werden alle  Attribute des Roboters initializiert
             %
             % Hebi-spezifisch:
-            group = HebiLookup.newGroupFromNames('Arm',{'Gelenk_1','Gelenk_2','Gelenk_3','Greifer'}); % TODO: Richtige Namen einfügen
+            group = HebiLookup.newGroupFromNames('Arm',{'Hebendes_Gelenk' ,'Hinteres_Gelenk' ,'Vorderes_Gelenk' ,'Greifer'}); % TODO: Richtige Namen einfügen
             kin = = HebiUtils.loadHRDF('2R_kinematics.xml'); % TODO: Richtige Kinematik-Datei einbinden
+            obj.cmd = CommandStruct();
             % Konstanten:
-            board_offset = [0.165 0.135]; % TODO: Offset von Basisprofil-Ecke zu Gelenkmittelpunkt hinzufügen% 2x1 vector in the cartesian arm system from the origin to the lower left corner of the grid (base of the board system)
-            fig_gripped_min_torque = 0.6;
-            gripper_open_angle = 0.2; % TODO: Adjust
-            gripper_closed_angle = 0; % TODO: Adjust
+            board_offset = [0.19 0.158]; 
+            fig_gripped_min_torque = 0.3;
+            gripper_open_angle = 1.7; % TODO: Adjust
+            gripper_closed_angle = 2.05; % TODO: Adjust
+            % Variablen des Greifers
+            obj.gripper_opened = false;
+            obj.figure_gripped = false;
             % Variablen des Arms:
             hinge_target = 0.5; % TODO: Adjust
             xy_target  = [0 0]; % 2x1 vector of the desired arm position in the cartesian system
@@ -73,40 +81,45 @@ classdef Robot
 
         function gripper_open(obj)
             fbk = obj.group.getNextFeedback();
-            obj.gripper_angle = fbk.pos(4);
-            while obj.gripper_angle < obj.gripper_open_angle 
-                obj.gripper_vel = 0.1; % TODO: Adjust
-                obj.cmd.velocity = [0 0 0 obj.gripper_vel];
+            gripper_angle = fbk.position(4);
+            while gripper_angle > obj.gripper_open_angle 
+                gripper_vel = -0.5; % TODO: Adjust
+                obj.cmd.velocity = [0 0 0 gripper_vel];
                 obj.group.send(obj.cmd);
                 fbk = obj.group.getNextFeedback();
-                obj.gripper_angle = fbk.pos(4);
+                gripper_angle = fbk.position(4);
             end
             obj.cmd.velocity = [0 0 0 0];
             obj.group.send(obj.cmd);
-            obj.gripper_open = true;
+            obj.gripper_opened = true;
+            %disp("Gripper opened!");
         end
+
 
         function gripper_close(obj)
             fbk = obj.group.getNextFeedback();
-            obj.gripper_angle = fbk.pos(4);
-            while obj.gripper_angle > obj.gripper_closed_angle 
-                obj.gripper_vel = -0.1; % TODO: Adjust
-                obj.cmd.velocity = [0 0 0 obj.gripper_vel];
+            gripper_angle = fbk.position(4);
+            while gripper_angle < obj.gripper_closed_angle 
+                gripper_vel = 0.5; % TODO: Adjust
+                obj.cmd.velocity = [0 0 0 gripper_vel];
                 obj.group.send(obj.cmd);
                 fbk = obj.group.getNextFeedback();
-                obj.gripper_angle = fbk.pos(4);
+                gripper_angle = fbk.position(4);
             end
             obj.cmd.velocity = [0 0 0 0];
             obj.group.send(obj.cmd);
             fbk = obj.group.getNextFeedback();
-            obj.gripper_torque = fbk.effort(4);
-            if obj.gripper_torque > obj.fig_gripped_min_torque
+            gripper_torque = abs(fbk.effort(4));
+            if gripper_torque > obj.fig_gripped_min_torque
                 obj.figure_gripped = true;
+                disp("Figure gripped!");
             else
                 obj.figure_gripped = false;
+                disp("Figure not gripped!");
             end
-            obj.gripper_open = false;
+            obj.gripper_opened = false;
         end
+
 
         function arm_stop()
             obj.cmd.velocity = [0 0 0 0];
