@@ -6,12 +6,6 @@ classdef Chessbot
 
     methods (Static)
         function obj = Chessbot()
-
-        end
-        
-        
-        function setup()
-
             %Open in.txt to write and close again (to delete any old data).
             clearfile = fopen('C:\Users\lenna\OneDrive - TUM\Uni\Entickelung modularer Roboter\Schachroboter\IO\in.txt','w'); 
             fclose(clearfile);
@@ -27,6 +21,8 @@ classdef Chessbot
             Output = fopen('C:\Users\lenna\OneDrive - TUM\Uni\Entickelung modularer Roboter\Schachroboter\IO\out.txt','a');
 
         end
+        
+        
 
         function [robot_move, beat] = calculateMove(obj, player_move)
             % ..
