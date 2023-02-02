@@ -1,11 +1,15 @@
 classdef Chessbot
     
     properties
-
+        chess_status    % aktueller Spielstand (8x8 matrix, 0-keine Figur auf Feld, 1-eine Figur auf Feld)
     end
 
-    methods (Static)
+    methods (Access = public)
         function obj = Chessbot()
+
+            obj.chess_status = [ones(1,8); ones(1,8);zeros(1,8);zeros(1,8);zeros(1,8);zeros(1,8);ones(1,8); ones(1,8)];
+
+
             %Open in.txt to write and close again (to delete any old data).
             clearfile = fopen('C:\Users\lenna\OneDrive - TUM\Uni\Entickelung modularer Roboter\Schachroboter\IO\in.txt','w'); 
             fclose(clearfile);
@@ -21,19 +25,41 @@ classdef Chessbot
             Output = fopen('C:\Users\lenna\OneDrive - TUM\Uni\Entickelung modularer Roboter\Schachroboter\IO\out.txt','a');
 
         end
-        
-        
 
-        function [robot_move, beat] = calculateMove(obj, player_move)
-            % ..
+        function [obj, beat] = check_beat(obj, move_string)
+            % 
             %
             %
+            % === INPUT ARGUMENTS ===
+            % move_string : move in the fromat 'c2c4'
+            %
+            % === OUTPUT ARGUMENTS ===
+            % beat : bool, if there is a chesspiece at the goal field
+
+            beat = 0;
+
+            row_string = '12345678';
+            column_string = 'abcdefgh';
+            start_pos = [strfind(row_string,move_string(2)), strfind(column_string,move_string(1))];
+            end_pos = [strfind(row_string,move_string(4)), strfind(column_string,move_string(3))];
+
+
+            obj.chess_status(start_pos(1), start_pos(2)) = 0;
+            if (obj.chess_status(end_pos(1), end_pos(2)) == 1)
+                beat = 1;
+            end
+
+            obj.chess_status(end_pos(1), end_pos(2)) = 1;
+
+
+        end
+
+        function robot_move = calculateMove(obj, player_move)
             % === INPUT ARGUMENTS ===
             % player_move : move made by the player
             %
             % === OUTPUT ARGUMENTS ===
             % robot_move : move the robot will be executing next
-            % beat : bool, if there is a chesspiece at the goal field
 
             
             %Open file out.txt (this line goes to function setup for setting up)
