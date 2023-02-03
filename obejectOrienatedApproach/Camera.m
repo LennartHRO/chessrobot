@@ -11,10 +11,22 @@ classdef Camera
 
         display_prev
         display
+
+        img_before
+        img_after
+
+        mobile
+        cam
     end
 
 
     methods (Access = public)
+        function obj = Camera()
+            clear moblie;
+            obj.mobile = mobiledev;
+            obj.cam = camera(obj.mobile, 'back');
+          
+        end
 
         function [move, beat, color, text] = getMove(obj)
             % This function returns all the information abaout the move the
@@ -131,13 +143,15 @@ classdef Camera
             % obj
 
             if(when == 0)
-                obj.frm_prev=imread('Input_Images/Game1/Move9.jpeg');
-                [obj.board_state_prev, obj.display_prev] = obj.Board_State(obj.frm_prev);
+                %obj.frm_prev=imread('Input_Images/Game1/Move9.jpeg');
+                obj.img_before = snapshot(obj.cam, 'immediate');
+                [obj.board_state_prev, obj.display_prev] = obj.Board_State(obj.img_before);
             end
 
             if(when == 1)
-                obj.frm=imread('Input_Images/Game1/Move10.jpeg');
-                [obj.board_state, obj.display] = obj.Board_State(obj.frm);
+                %obj.frm=imread('Input_Images/Game1/Move10.jpeg');
+                obj.img_after = snapshot(obj.cam, 'immediate');
+                [obj.board_state, obj.display] = obj.Board_State(obj.img_after);
             end
 
         end
