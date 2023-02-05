@@ -6,9 +6,16 @@ classdef Robot
     properties
         % hier werden alle nötigen Attribute des Roboters deklariert
         % Hebi-spezifisch:
-        group % Hebi-Group
-        kin % Hebi Kinematics
-        cmd
+        gripper_group % Hebi-Group für den Greifer
+        arm2R_group % Hebi-Group für den arm2R-Arm
+        hinge_group % Hebi-Group für das Hinge-Gelenk
+        gripper_cmd 
+        arm2R_cmd
+        hinge_cmd
+        arm2R_kin
+        hinge_kin
+        arm2R_trajGen
+        hinge_trajGen
         % Konstanten:
         board_offset % 2x1 vector in the cartesian arm system from the origin to the lower left corner of the grid (base of the board system)
         fig_gripped_min_torque 
@@ -20,6 +27,9 @@ classdef Robot
         % Variablen des Arms:
         hinge_target % Scalar that is the target angle (radians) of the hinge (= first joint)
         xy_target % 2x1 vector of the desired arm position in the cartesian system
+        first_xy
+        second_xy
+        arm_target_reached
         % State-Machine:
         Arm_SM
     end
@@ -30,53 +40,107 @@ classdef Robot
             % hier werden alle  Attribute des Roboters initializiert
             %
             % Hebi-spezifisch:
-            group = HebiLookup.newGroupFromNames('Arm',{'Hebendes_Gelenk' ,'Hinteres_Gelenk' ,'Vorderes_Gelenk' ,'Greifer'}); % TODO: Richtige Namen einfügen
-            kin = = HebiUtils.loadHRDF('2R_kinematics.xml'); % TODO: Richtige Kinematik-Datei einbinden
-            obj.cmd = CommandStruct();
+            obj.gripper_group = HebiLookup.newGroupFromNames('Greifer',{'Greifer'}); 
+            obj.arm2R_group = HebiLookup.newGroupFromNames('Arm',{'Hinteres_Gelenk' ,'Vorderes_Gelenk'});
+            obj.hinge_group = HebiLookup.newGroupFromNames('Hebende',{'Hebendes_Gelenk'});
+            obj.gripper_cmd = CommandStruct();
+            obj.arm2R_cmd = CommandStruct();
+            obj.hinge_cmd = CommandStruct();
+            obj.arm2R_kin = HebiUtils.loadHRDF('2R_kinematics.xml'); 
+            obj.hinge_kin = HebiUtils.loadHRDF('2R_kinematics.xml'); % TODO: Create 1-dimensional hinge xml and add it
+            obj.arm2R_trajGen = HebiTrajectoryGenerator(obj.arm2R_kin);
+            obj.hinge_trajGen = HebiTrajectoryGenerator(obj.hinge_kin);
             % Konstanten:
-            board_offset = [0.19 0.158]; 
-            fig_gripped_min_torque = 0.3;
-            gripper_open_angle = 1.7; % TODO: Adjust
-            gripper_closed_angle = 2.05; % TODO: Adjust
+            obj.board_offset = [0.19 -0.133]; 
+            obj.fig_gripped_min_torque = 0.3;
+            obj.gripper_open_angle = 1.7; % TODO: Adjust
+            obj.gripper_closed_angle = 2.02; % TODO: Adjust
             % Variablen des Greifers
             obj.gripper_opened = false;
             obj.figure_gripped = false;
             % Variablen des Arms:
-            hinge_target = 0.5; % TODO: Adjust
-            xy_target  = [0 0]; % 2x1 vector of the desired arm position in the cartesian system
+            obj.hinge_target = 0.5; % TODO: Adjust
+            obj.xy_target  = [0 0]; % 2x1 vector of the desired arm position in the cartesian system
+            obj.first_xy = [0 0];
+            obj.second_xy = [0 0];
+            obj.arm_target_reached = false;
             % State-Machine:
             % Initialization of the state machine and its constants. 
             % TODO: adjust the values of the constants
-            Arm_SM = ArmStateMachine(up_angle = 0.5, down_angle = 0, rest_xy = [0.1 -0.4], discard_xy = [0.3 -0.4]);
+            obj.Arm_SM = ArmStateMachine(up_angle = 0.5, down_angle = 0, rest_xy = [0.1 -0.4], discard_xy = [0.3 -0.4]);
             % Variablen die den Zug beschreiben
 
         end
 
-        function field_to_robot_coords(obj, desired_move_mtx)
-            % TODO
-            obj.first_xy = ;
-            obj.second_xy = ;
+        function [first_xy, second_xy] = field_to_robot_coords(obj, desired_move_mtx)
+            cell_size = 0.05; % [m] Breite = Höhe
+            first_pos_field_sys = cell_size*desired_move_mtx(1,:) - 0.5*[cell_size,cell_size];
+            second_pos_field_sys = cell_size*desired_move_mtx(2,:) - 0.5*[cell_size,cell_size];
+            first_xy = first_pos_field_sys + obj.board_offset;
+            second_xy = second_pos_field_sys + obj.board_offset;
         end
 
         function makeMove(obj, desired_move_mtx,figure_must_be_beat)
-            % === INPUT ARGUMENTS ===
-            % desired_move_mtx = a 2x2 matrix
-            % where the first row is the xy-coords (arm system) of the
-            % starting position of the move while the second row is the
-            % coords of the end position.
-            obj.chess_move_done = false;
-            while obj.chess_move_done == false
+            chess_move_done = false;
+            [first_xy, second_xy] = field_to_robot_coords(desired_move_mtx);
+            while chess_move_done == false
                 % The SM is run with only the the variables that are determined in Matlab being explicitly set:
-                step(Arm_SM,first_xy = ,second_xy = , arm_target_reached = ,??? = figure_must_be_beat); 
-                obj.chess_move_done = obj.Arm_SM.chess_move_done;
+                step(obj.Arm_SM,statemachine_first_xy = first_xy, statemachine_second_xy = second_xy, arm_target_reached = obj.arm_target_reached); 
+                switch obj.Arm_SM.function_to_run
+                    case "none"
+                        obj.arm_stop();
+                    case "gripper_open"
+                        obj.gripper_open();
+                    case "gripper_close"
+                        obj.gripper_close();
+                    case "arm_move"
+                        hinge_target = obj.Arm_SM.hinge_target;
+                        xy_target = obj.Arm_SM.xy_target;
+                        obj.arm_move(hinge_target,xy_target);
+                    case "arm_stop"
+                        obj.arm_stop();
+                    otherwise
+                        disp("Error");
+                end
+                chess_move_done = obj.Arm_SM.chess_move_done;
             end
         end
 
-        function move_arm(obj, hinge_target,xy_target)
-            % TODO: Die Funktion soll das erste Gelenk (= Hinge) und die
-            % Gelenke 2 und 3 (= 2R-Arm) ansteuern.
-            % Sobald sowohl hinge-target als auch xy-target erreicht sind 
-            % soll die globale Variable 
+        function arm2R_move(obj, xy_target)
+            % set the Hebigroup of arm2R Arm
+
+            % generate trajectory
+            obj.arm2R_trajGen.setAlgorithm('MinJerkPhase'); % MinJerk trajectories
+            obj.arm2R_trajGen.setSpeedFactor(1);
+            % get the joint position that the arm needs to be moved
+            jointspace_target = obj.arm2R_kin.getIK("XYZ", [xy_target 0]);
+            xy_target_joint_position = [jointspace_target(1), jointspace_target(2)];
+            % get the current joint position
+            fbk = obj.arm2R_group.getNextFeedback();
+            xy_init_joint_pos = [fbk.position(1), fbk.position(2)];
+            % create the trajectory
+            xy_waypoints = [xy_init_joint_pos; xy_target_joint_position];
+            xy_traj = obj.arm2R_trajGen.newJointMove(xy_waypoints);
+            % move the arm with command
+            t0 = tic(); % start a timer at the current CPU time
+            t = toc(t0); % time since start of timer
+            
+            while t < xy_traj.getDuration() % Duration is the total time the trajectory takes
+                t = toc(t0); % time since start of timer
+                % get position and velocity at time t from trajectory
+                [pos, vel, accel] = xy_traj.getState(t);
+                % send the position commands
+                obj.arm2R_cmd.position(1) = pos(1);
+                obj.arm2R_cmd.position(2) = pos(2);
+                %disp(pos);
+                % send the velocity commands
+                obj.arm2R_cmd.velocity(1) = vel(1);
+                obj.arm2R_cmd.velocity(2) = vel(2);
+                obj.arm2R_group.send(obj.arm2R_cmd);
+            end
+            
+
+            obj.arm_target_reached = true;
         end
 
         function gripper_open(obj)

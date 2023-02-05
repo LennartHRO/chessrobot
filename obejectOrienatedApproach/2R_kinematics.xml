@@ -1,0 +1,7 @@
+<robot>
+  <actuator type="X5-9"/>
+  <link type="X5" extension="0.425" twist="pi"/>
+  <actuator type="X5-9"/>
+  <rigid-body mass="0.3" output_trans="0.24 -0.06797 0"/>
+</robot>
+
