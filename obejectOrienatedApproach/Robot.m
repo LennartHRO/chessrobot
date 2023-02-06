@@ -1,4 +1,4 @@
-classdef Robot
+classdef Robot < handle
     % Klasse Robot
     % Enthält alle Attribute, die den Roboterarm beschreiben, und alle
     % Funktionen, die dieser auführen kann.
@@ -27,8 +27,8 @@ classdef Robot
         % Variablen des Arms:
         hinge_target % Scalar that is the target angle (radians) of the hinge (= first joint)
         xy_target % 2x1 vector of the desired arm position in the cartesian system
-        first_xy
-        second_xy
+        starting_xy
+        destination_xy
         arm_target_reached
         % State-Machine:
         Arm_SM
@@ -64,8 +64,6 @@ classdef Robot
             % Variablen des Arms:
             obj.hinge_target = 0.5; % TODO: Adjust
             obj.xy_target  = [0 0]; % 2x1 vector of the desired arm position in the cartesian system
-            obj.first_xy = [0 0];
-            obj.second_xy = [0 0];
             obj.arm_target_reached = 0;
             % State-Machine:
             % Initialization of the state machine and its constants. 
@@ -77,11 +75,14 @@ classdef Robot
 
         function makeMove(obj, desired_move_mtx,figure_must_be_beat) % Not yet done
             chess_move_done = false;
-            [first_xy, second_xy] = obj.field_to_robot_coords(desired_move_mtx);
+            [starting_xy, destination_xy] = obj.field_to_robot_coords(desired_move_mtx);
             while chess_move_done == false
+                % 
                 % The SM is run with only the the variables that are determined in Matlab being explicitly set:
-                disp(obj.arm_target_reached);
-                step(obj.Arm_SM, statemachine_first_xy = first_xy, statemachine_second_xy = second_xy, statemachine_arm_target_reached = obj.arm_target_reached); 
+                step(obj.Arm_SM, sm_starting_xy = starting_xy, sm_destination_xy = destination_xy, ... 
+                    sm_arm_target_reached = obj.arm_target_reached, sm_gripper_open = obj.gripper_opened, ...
+                    sm_fig_grabbed = obj.figure_gripped, sm_discard_fig = figure_must_be_beat);
+                %
                 switch obj.Arm_SM.function_to_run
                     case "none"
                         obj.arm_stop();
@@ -107,12 +108,12 @@ classdef Robot
             end
         end
 
-        function [first_xy, second_xy] = field_to_robot_coords(obj, desired_move_mtx) % Works
+        function [starting_xy, destination_xy] = field_to_robot_coords(obj, desired_move_mtx) % Works
             cell_size = 0.05; % [m] Breite = Höhe
             first_pos_field_sys = cell_size*desired_move_mtx(1,:) - 0.5*[cell_size,cell_size];
             second_pos_field_sys = cell_size*desired_move_mtx(2,:) - 0.5*[cell_size,cell_size];
-            first_xy = first_pos_field_sys + obj.board_offset;
-            second_xy = second_pos_field_sys + obj.board_offset;
+            starting_xy = first_pos_field_sys + obj.board_offset;
+            destination_xy = second_pos_field_sys + obj.board_offset;
         end
 
         function arm2R_move(obj, xy_target) % Works but not so accurate
@@ -201,6 +202,7 @@ classdef Robot
             obj.cmd.velocity = [0 0 0 0];
             obj.group.send(obj.cmd);
             %}
+            obj.figure_gripped = false;
             obj.gripper_opened = true;
             %disp("Gripper opened!");
         end
@@ -230,6 +232,7 @@ classdef Robot
                 disp("Figure not gripped!");
             end
             %}
+            obj.figure_gripped = true;
             obj.gripper_opened = false;
         end
 
