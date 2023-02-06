@@ -153,6 +153,36 @@ classdef Robot
 
         function hinge_move(obj, hinge_target) % TODO: Copy code from arm2R_move, adjust it to just one motor
             disp("Moving arm hinge!");
+            % generate trajectory
+            obj.hinge_trajGen.setAlgorithm('MinJerkPhase'); % MinJerk trajectories
+            obj.hinge_trajGen.setSpeedFactor(1);
+            % get the joint position that the arm with hinge needs to be moved
+            jointspace_target = obj.hinge_kin.getIK("XYZ", [hinge_target 0]);
+            hinge_target_joint_position = [jointspace_target(1), jointspace_target(2)];
+            % get the current joint position
+            fbk = obj.hinge_group.getNextFeedback();
+            hinge_init_joint_pos = [fbk.position(1), fbk.position(2)];
+            % create the trajectory
+            hinge_waypoints = [hinge_init_joint_pos; hinge_target_joint_position];
+            hinge_traj = obj.hinge_trajGen.newJointMove(hinge_waypoints);
+            % move the arm with hinge
+            t0 = tic(); % start a timer at the current CPU time
+            t = toc(t0); % time since start of timer
+            
+            while t < hinge_traj.getDuration() % Duration is the total time the trajectory takes
+                t = toc(t0); % time since start of timer
+                % get position and velocity at time t from trajectory
+                [pos, vel, accel] = hinge_traj.getState(t);
+                % send the position commands
+                obj.hinge_cmd.position(1) = pos(1);
+                obj.hinge_cmd.position(2) = pos(2);
+                %disp(pos);
+                % send the velocity commands
+                obj.hinge_cmd.velocity(1) = vel(1);
+                obj.hinge_cmd.velocity(2) = vel(2);
+                obj.hinge_group.send(obj.hinge_cmd);
+            end
+
             obj.arm_target_reached = 1;
         end
 

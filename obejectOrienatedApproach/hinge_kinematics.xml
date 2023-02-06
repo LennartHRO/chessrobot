@@ -1,0 +1,9 @@
+<robot>
+    <bracket type="X5LightRight"/>
+    <actuator type="X8-9"/>
+    <rigid-body output_trans="0 0.03525 0.0365" output_rot="1 0 0 0 0 1 0 1 0" com_trans="0.0028 0.02492 0.02176" mass="0.04104"/>
+    <actuator type="X5-9"/>
+    <link type="X5" extension="0.425" twist="pi"/>
+    <actuator type="X5-9"/>
+    <rigid-body mass="0.3" output_trans="0.24 -0.06797 0"/>
+</robot>
