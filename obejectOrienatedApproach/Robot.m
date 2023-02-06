@@ -168,7 +168,8 @@ classdef Robot
             % move the arm with hinge
             t0 = tic(); % start a timer at the current CPU time
             t = toc(t0); % time since start of timer
-            
+            gravity_vec = [0 0 -1]; % define the gravity vector
+
             while t < hinge_traj.getDuration() % Duration is the total time the trajectory takes
                 t = toc(t0); % time since start of timer
                 % get position and velocity at time t from trajectory
@@ -176,10 +177,12 @@ classdef Robot
                 % send the position commands
                 obj.hinge_cmd.position(1) = pos(1);
                 obj.hinge_cmd.position(2) = pos(2);
-                %disp(pos);
                 % send the velocity commands
                 obj.hinge_cmd.velocity(1) = vel(1);
                 obj.hinge_cmd.velocity(2) = vel(2);
+                % try to eliminate the effects of gravity
+                obj.hinge_cmd.efforts = kin.getGravCompEfforts(fbk.position, gravity_vec);
+                % send the command back to the hinge
                 obj.hinge_group.send(obj.hinge_cmd);
             end
 
