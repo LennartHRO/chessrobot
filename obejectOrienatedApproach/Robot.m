@@ -41,7 +41,7 @@ classdef Robot < handle
             % hier werden alle  Attribute des Roboters initializiert
             %
             % Hebi-spezifisch:
-            %{
+            %
             obj.gripper_group = HebiLookup.newGroupFromNames('Greifer',{'Greifer'}); 
             obj.arm2R_group = HebiLookup.newGroupFromNames('Arm',{'Hinteres_Gelenk' ,'Vorderes_Gelenk'});
             obj.hinge_group = HebiLookup.newGroupFromNames('Hebende',{'Hebendes_Gelenk'});
@@ -49,10 +49,9 @@ classdef Robot < handle
             obj.arm2R_cmd = CommandStruct();
             obj.hinge_cmd = CommandStruct();
             obj.arm2R_kin = HebiUtils.loadHRDF('2R_kinematics.xml'); 
-            obj.hinge_kin = HebiUtils.loadHRDF('2R_kinematics.xml'); % TODO: Create 1-dimensional hinge xml and add it
             obj.arm2R_trajGen = HebiTrajectoryGenerator(obj.arm2R_kin);
             obj.hinge_trajGen = HebiTrajectoryGenerator(obj.hinge_kin);
-            %}
+            %
             % Konstanten:
             obj.board_offset = [0.19 -0.133]; 
             obj.fig_gripped_min_torque = 0.3;
@@ -67,21 +66,22 @@ classdef Robot < handle
             obj.arm_target_reached = 0;
             % State-Machine:
             % Initialization of the state machine and its constants. 
-            % TODO: adjust the values of the constants
-            obj.Arm_SM = ArmStateMachine(up_angle = 0.5, down_angle = 0, rest_xy = [0.1 -0.4], discard_xy = [0.3 -0.4]);
+            % TODO: test, adjust the values of the constants
+            obj.Arm_SM = ArmStateMachine(up_angle = 0.5, down_angle = 0, rest_xy = [0.6 0], discard_xy = [0.1 -0.5]);
             % Variablen die den Zug beschreiben
-
         end
 
         function makeMove(obj, desired_move_mtx,figure_must_be_beat) % Not yet done
             chess_move_done = false;
+            obj.Arm_SM.chess_move_done = false;
             [starting_xy, destination_xy] = obj.field_to_robot_coords(desired_move_mtx);
+            obj.Arm_SM.sm_discard_fig = figure_must_be_beat;
             while chess_move_done == false
                 % 
                 % The SM is run with only the the variables that are determined in Matlab being explicitly set:
                 step(obj.Arm_SM, sm_starting_xy = starting_xy, sm_destination_xy = destination_xy, ... 
                     sm_arm_target_reached = obj.arm_target_reached, sm_gripper_open = obj.gripper_opened, ...
-                    sm_fig_grabbed = obj.figure_gripped, sm_discard_fig = figure_must_be_beat);
+                    sm_fig_grabbed = obj.figure_gripped);
                 %
                 switch obj.Arm_SM.function_to_run
                     case "none"
@@ -109,6 +109,8 @@ classdef Robot < handle
         end
 
         function [starting_xy, destination_xy] = field_to_robot_coords(obj, desired_move_mtx) % Works
+            
+            % desired_move_mtx : [Zeile 1. Posi, Spalte 1. Posi; Zeile 2.Posi, Spalte 2. Posi]
             cell_size = 0.05; % [m] Breite = Höhe
             first_pos_field_sys = cell_size*desired_move_mtx(1,:) - 0.5*[cell_size,cell_size];
             second_pos_field_sys = cell_size*desired_move_mtx(2,:) - 0.5*[cell_size,cell_size];
@@ -118,7 +120,7 @@ classdef Robot < handle
 
         function arm2R_move(obj, xy_target) % Works but not so accurate
             disp("Moving 2R arm");
-            %{
+            %
             % generate trajectory
             obj.arm2R_trajGen.setAlgorithm('MinJerkPhase'); % MinJerk trajectories
             obj.arm2R_trajGen.setSpeedFactor(1);
@@ -134,7 +136,7 @@ classdef Robot < handle
             % move the arm with command
             t0 = tic(); % start a timer at the current CPU time
             t = toc(t0); % time since start of timer
-            
+            %
             while t < xy_traj.getDuration() % Duration is the total time the trajectory takes
                 t = toc(t0); % time since start of timer
                 % get position and velocity at time t from trajectory
@@ -148,85 +150,76 @@ classdef Robot < handle
                 obj.arm2R_cmd.velocity(2) = vel(2);
                 obj.arm2R_group.send(obj.arm2R_cmd);
             end
-            %}
+            %
             obj.arm_target_reached = 1;
         end
 
-        function hinge_move(obj, hinge_target) % TODO: Copy code from arm2R_move, adjust it to just one motor
+        function hinge_move(obj, hinge_target) % TODO:Debug, test
             disp("Moving arm hinge!");
+            %
             % generate trajectory
             obj.hinge_trajGen.setAlgorithm('MinJerkPhase'); % MinJerk trajectories
             obj.hinge_trajGen.setSpeedFactor(1);
-            % get the joint position that the arm with hinge needs to be moved
-            jointspace_target = obj.hinge_kin.getIK("XYZ", [hinge_target 0]);
-            hinge_target_joint_position = [jointspace_target(1), jointspace_target(2)];
             % get the current joint position
             fbk = obj.hinge_group.getNextFeedback();
-            hinge_init_joint_pos = [fbk.position(1), fbk.position(2)];
+            hinge_init_joint_pos = fbk.position(1);
             % create the trajectory
-            hinge_waypoints = [hinge_init_joint_pos; hinge_target_joint_position];
+            hinge_waypoints = [hinge_init_joint_pos; hinge_target];
             hinge_traj = obj.hinge_trajGen.newJointMove(hinge_waypoints);
             % move the arm with hinge
             t0 = tic(); % start a timer at the current CPU time
-            t = toc(t0); % time since start of timer
-            gravity_vec = [0 0 -1]; % define the gravity vector
-
+            t = toc(t0); % time since start of timer         
             while t < hinge_traj.getDuration() % Duration is the total time the trajectory takes
                 t = toc(t0); % time since start of timer
                 % get position and velocity at time t from trajectory
                 [pos, vel, accel] = hinge_traj.getState(t);
                 % send the position commands
                 obj.hinge_cmd.position(1) = pos(1);
-                obj.hinge_cmd.position(2) = pos(2);
+                %disp(pos);
                 % send the velocity commands
                 obj.hinge_cmd.velocity(1) = vel(1);
-                obj.hinge_cmd.velocity(2) = vel(2);
-                % try to eliminate the effects of gravity
-                obj.hinge_cmd.efforts = kin.getGravCompEfforts(fbk.position, gravity_vec);
-                % send the command back to the hinge
                 obj.hinge_group.send(obj.hinge_cmd);
             end
-
+            %
             obj.arm_target_reached = 1;
         end
 
         function gripper_open(obj) % Works
             disp("Opening Gripper");
-            %{
-            fbk = obj.group.getNextFeedback();
-            gripper_angle = fbk.position(4);
+            %
+            fbk = obj.gripper_group.getNextFeedback();
+            gripper_angle = fbk.position(1);
             while gripper_angle > obj.gripper_open_angle 
                 gripper_vel = -0.5; % TODO: Adjust
-                obj.cmd.velocity = [0 0 0 gripper_vel];
-                obj.group.send(obj.cmd);
+                obj.gripper_cmd.velocity = gripper_vel;
+                obj.gripper_group.send(obj.gripper_cmd);
                 fbk = obj.group.getNextFeedback();
-                gripper_angle = fbk.position(4);
+                gripper_angle = fbk.position(1);
             end
-            obj.cmd.velocity = [0 0 0 0];
-            obj.group.send(obj.cmd);
-            %}
+            obj.gripper_cmd.velocity = 0;
+            obj.gripper_group.send(obj.gripper_cmd);
+            %
             obj.figure_gripped = false;
             obj.gripper_opened = true;
             %disp("Gripper opened!");
         end
 
-
         function gripper_close(obj) % Works
             disp("Closing Gripper");
-            %{
-            fbk = obj.group.getNextFeedback();
-            gripper_angle = fbk.position(4);
+            %
+            fbk = obj.gripper_group.getNextFeedback();
+            gripper_angle = fbk.position(1);
             while gripper_angle < obj.gripper_closed_angle 
                 gripper_vel = 0.5; % TODO: Adjust
-                obj.cmd.velocity = [0 0 0 gripper_vel];
-                obj.group.send(obj.cmd);
-                fbk = obj.group.getNextFeedback();
-                gripper_angle = fbk.position(4);
+                obj.gripper_cmd.velocity = gripper_vel;
+                obj.gripper_group.send(obj.gripper_cmd);
+                fbk = obj.gripper_group.getNextFeedback();
+                gripper_angle = fbk.position(1);
             end
-            obj.cmd.velocity = [0 0 0 0];
-            obj.group.send(obj.cmd);
-            fbk = obj.group.getNextFeedback();
-            gripper_torque = abs(fbk.effort(4));
+            obj.gripper_cmd.velocity = 0;
+            obj.gripper_group.send(obj.gripper_cmd);
+            fbk = obj.gripper_group.getNextFeedback();
+            gripper_torque = abs(fbk.effort(1));
             if gripper_torque > obj.fig_gripped_min_torque
                 obj.figure_gripped = true;
                 disp("Figure gripped!");
@@ -234,16 +227,19 @@ classdef Robot < handle
                 obj.figure_gripped = false;
                 disp("Figure not gripped!");
             end
-            %}
+            %
             obj.figure_gripped = true;
             obj.gripper_opened = false;
         end
 
-
         function arm_stop(obj)
             disp("Stopping Arm");
-            %obj.cmd.velocity = [0 0 0 0];
-            %obj.group.send(obj.cmd);
+            obj.grippper_cmd.velocity = 0;
+            obj.gripper_group.send(obj.gripper_cmd);
+            obj.arm2R_cmd.velocity = [0 0];
+            obj.arm2R_group.send(obj.arm2R_cmd);
+            obj.hinge_cmd.velocity = 0;
+            obj.hinge_group.send(obj.hinge_cmd);
         end
     end
 
